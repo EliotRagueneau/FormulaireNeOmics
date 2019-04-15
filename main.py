@@ -1,9 +1,8 @@
+from Colors import *
 import tkinter.ttk as ttk
 
-from Colors import *
 from ScrollingFrame import ScrollingFrame
 
-root = tk.Tk()
 root.title("Cypher Query Creator")
 # root.iconbitmap("icon.ico")
 root.configure(bg=BG_COLOR)
