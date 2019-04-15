@@ -8,9 +8,10 @@ FONT_CLEAR_COLOR = "white"
 FONT_DARK_COLOR = "#C4C4C4"
 
 MORCEAU = tk.PhotoImage(file="Ressources/morceau.png")
-NODES_IMG = {"Tissue"    : tk.PhotoImage(file="Ressources/Tissue.png"),
-             "Analysis"  : tk.PhotoImage(file="Ressources/Analysis.png"),
-             "Gene"      : tk.PhotoImage(file="Ressources/Gene.png"),
-             "Protein"   : tk.PhotoImage(file="Ressources/Protein.png"),
-             "Annotation": tk.PhotoImage(file="Ressources/Annot.png")
+NODES_IMG = {"Tissue": tk.PhotoImage(file="Ressources/Tissue.png"),
+             "Analysis": tk.PhotoImage(file="Ressources/Analysis.png"),
+             "Gene": tk.PhotoImage(file="Ressources/Gene.png"),
+             "Protein": tk.PhotoImage(file="Ressources/Protein.png"),
+             "Annotation": tk.PhotoImage(file="Ressources/Annot.png"),
+             "Unknown": tk.PhotoImage(file="Ressources/Unknown_node.png")
              }

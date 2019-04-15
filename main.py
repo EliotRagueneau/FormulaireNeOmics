@@ -1,7 +1,9 @@
 from Colors import *
 import tkinter.ttk as ttk
-
+from tkinter.font import *
 from ScrollingFrame import ScrollingFrame
+
+font = Font(family="Roboto", size=10)
 
 root.title("Cypher Query Creator")
 # root.iconbitmap("icon.ico")
@@ -14,7 +16,7 @@ except:
     pass
 query = tk.StringVar()
 query.set("MATCH")
-tk.Label(root, textvariable=query, width=40, anchor='e', bg=BG_COLOR).pack()
+tk.Label(root, textvariable=query, width=40, anchor='e', bg=BG_COLOR, font=font).pack()
 
 nodes = []
 
@@ -71,7 +73,9 @@ lower_line_canvas.create_line(0, 5, line_width, 5, fill=ACCENT_COLOR)
 
 
 class Line:
-    node_icon = tk.PhotoImage(file="Ressources/Unknown_node.png")
+    # TODO Add remove option
+    # TODO Add Send button (connexion with Tulip)
+    # TODO Deal with several branches
     add_icon = tk.PhotoImage(file="Ressources/Add_button.png")
     entry_bg = tk.PhotoImage(file="Ressources/Entry_bg.png")
     remove_icon = tk.PhotoImage(file="Ressources/Remove_line.png")
@@ -82,21 +86,19 @@ class Line:
         self.frame = tk.Frame(work_frame.frame, relief='flat', bg=BG_COLOR)
         self.frame.pack(anchor='w', padx=15)
 
-        type_variable = tk.StringVar()
-        # self.type_options = []
         self.name_options = []
         self.query = ""
 
-        self.node_button = tk.Button(self.frame, image=self.node_icon, relief='flat', bg=BG_COLOR, cursor="hand2",
-                                     highlightthickness=0, bd=0, activebackground=BG_COLOR, command=self.type_choice)
+        self.node_button = tk.Button(self.frame, image=NODES_IMG['Unknown'], relief='flat', bg=BG_COLOR, cursor="hand2",
+                                     highlightthickness=0, bd=0, activebackground=BG_COLOR, command=self.type_choice,
+                                     font=font)
         self.node_button.grid(row=0, column=0)
         self.node_type = ""
         self.returned = tk.IntVar()
         self.name = tk.StringVar()
         tk.Checkbutton(self.frame, variable=self.returned, text="name : ", bg=BG_COLOR, highlightthickness=0,
-                       bd=0).grid(row=0,
-                                  column=1)
-        ttk.Combobox(self.frame, textvariable=self.name, width=20, cursor="hand2").grid(row=0, column=2)
+                       bd=0, font=font, activebackground=BG_COLOR).grid(row=0, column=1)
+        ttk.Combobox(self.frame, textvariable=self.name, width=20, cursor="hand2", font=font).grid(row=0, column=2)
 
         self.name.trace('w', update_global_query)
         self.returned.trace('w', update_global_query)
@@ -104,7 +106,9 @@ class Line:
                                     cursor="hand2", highlightthickness=0, bd=0, activebackground=BG_COLOR)
         self.add_button.grid(row=2, column=0)
         self.link = None
-        self.choice_frame = self.choice_frame = tk.Frame(self.frame, bg=BG_COLOR)
+        self.choice_frame = tk.Frame(self.frame, {"width": 0,
+                                                  "height": 5,
+                                                  "bg": BG_COLOR})
         self.choice_frame.grid(row=1, columnspan=4)
 
     def update_query(self):
@@ -126,12 +130,16 @@ class Line:
         self.query += "(a) RETURN "
 
     def type_choice(self):
+        # TODO Fix the gap between MORCEAU and inner_frame
+        # TODO Fix the gap between link and next line
+        self.node_button.configure(command=lambda x=self.node_type: self.select_node(x))
         self.choice_frame.configure(bg=BG_COLOR)
         for element in self.choice_frame.grid_slaves():
             element.destroy()
         self.update_query()
         types = ["Tissue", "Analysis", "Gene", "Protein", "Annotation"]
         # TODO types = py2neo.query(self.query + "DISTINCT labels(a)")
+        types.append("Unknown")
         counter = -1
         tk.Label(self.choice_frame, image=MORCEAU, bg=BG_COLOR, pady=0, anchor='s').grid(sticky='sw', padx=18)
         self.choice_inner_frame = tk.Frame(self.choice_frame, bg=FONT_DARK_COLOR)
@@ -140,7 +148,7 @@ class Line:
             counter += 1
             # possible_type = possible_type.split('"')[1]
             node_btn = tk.Button(self.choice_inner_frame, text=possible_type, relief='flat', bg=FONT_DARK_COLOR,
-                                 cursor="hand2",
+                                 cursor="hand2", font=font,
                                  highlightthickness=0, bd=0, activebackground=FONT_DARK_COLOR,
                                  command=lambda x=possible_type: self.select_node(x))
             if possible_type in NODES_IMG:
@@ -148,16 +156,17 @@ class Line:
             node_btn.grid(row=(counter // 4), column=counter % 4, padx=5, pady=5)
 
     def select_node(self, node_type):
+        self.node_button.configure(command=self.type_choice)
         for element in self.choice_frame.grid_slaves():
             element.destroy()
         self.choice_frame.configure({"width": 0,
                                      "height": 5,
                                      "bg": BG_COLOR})
-        self.node_type = node_type
+        self.node_type = node_type if node_type != "Unknown" else ""
         if node_type in NODES_IMG:
             self.node_button.configure(image=NODES_IMG[node_type])
         else:
-            self.node_button.configure(image=self.node_icon)
+            self.node_button.configure(image=NODES_IMG['Unknown'])
         update_global_query()
 
     def new_line(self):
@@ -172,6 +181,8 @@ class Line:
 class Link:
     simple_link_icon = tk.PhotoImage(file="Ressources/Lien.png")
     composed_link_icon = tk.PhotoImage(file="Ressources/Composed_Link.png")
+
+    # TODO Relation type
 
     def __init__(self):
         self.simple = True
@@ -190,10 +201,10 @@ class Link:
         self.middle_frame.grid(row=0, column=2)
         self.max_frame.grid(row=0, column=3, padx=3)
 
-        tk.Label(self.min_frame, text="from", bg=BG_COLOR, fg=ACCENT_COLOR).grid(row=0)
+        tk.Label(self.min_frame, text="from", bg=BG_COLOR, fg=ACCENT_COLOR, font=font).grid(row=0)
         self.min_spin = tk.Spinbox(self.min_frame, from_=1, to=20, width=2, bg=ACCENT_COLOR, fg=FONT_CLEAR_COLOR,
                                    insertbackground=FONT_CLEAR_COLOR, relief='flat',
-                                   command=self.update_max, textvariable=self.min)
+                                   command=self.update_max, textvariable=self.min, font=font)
 
         self.min_spin.grid(row=1)
 
@@ -201,11 +212,11 @@ class Link:
         tk.Label(self.min_frame, text="", bg=BG_COLOR).grid(row=2)
         tk.Label(self.middle_frame, text="", bg=BG_COLOR).grid(row=2)
         tk.Label(self.max_frame, text="", bg=BG_COLOR).grid(row=2)
-        tk.Label(self.middle_frame, text="..", bg=BG_COLOR, fg=ACCENT_COLOR).grid(row=1)
-        tk.Label(self.max_frame, text="to", bg=BG_COLOR, fg=ACCENT_COLOR).grid(row=0, sticky='w')
+        tk.Label(self.middle_frame, text="..", bg=BG_COLOR, fg=ACCENT_COLOR, font=font).grid(row=1)
+        tk.Label(self.max_frame, text="to", bg=BG_COLOR, fg=ACCENT_COLOR, font=font).grid(row=0, sticky='w')
         self.max_spin = tk.Spinbox(self.max_frame, from_=1, to=20, width=2, bg=ACCENT_COLOR, fg=FONT_CLEAR_COLOR,
                                    insertbackground=FONT_CLEAR_COLOR, relief='flat',
-                                   command=self.update_min, textvariable=self.max)
+                                   command=self.update_min, textvariable=self.max, font=font)
         self.max_spin.grid(row=1)
 
         self.min.trace('w', update_global_query)
