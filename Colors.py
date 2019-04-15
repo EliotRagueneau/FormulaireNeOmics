@@ -7,6 +7,7 @@ ACCENT_COLOR = "#A2A2A2"
 FONT_CLEAR_COLOR = "white"
 FONT_DARK_COLOR = "#C4C4C4"
 
+MORCEAU = tk.PhotoImage(file="Ressources/morceau.png")
 NODES_IMG = {"Tissue"    : tk.PhotoImage(file="Ressources/Tissue.png"),
              "Analysis"  : tk.PhotoImage(file="Ressources/Analysis.png"),
              "Gene"      : tk.PhotoImage(file="Ressources/Gene.png"),

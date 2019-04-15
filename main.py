@@ -87,8 +87,9 @@ class Line:
         self.name_options = []
         self.query = ""
 
-        tk.Button(self.frame, image=self.node_icon, relief='flat', bg=BG_COLOR, cursor="hand2", highlightthickness=0,
-                  bd=0, activebackground=BG_COLOR, command=self.type_choice).grid(row=0, column=0)
+        self.node_button = tk.Button(self.frame, image=self.node_icon, relief='flat', bg=BG_COLOR, cursor="hand2",
+                                     highlightthickness=0, bd=0, activebackground=BG_COLOR, command=self.type_choice)
+        self.node_button.grid(row=0, column=0)
         self.node_type = ""
         self.returned = tk.IntVar()
         self.name = tk.StringVar()
@@ -103,9 +104,8 @@ class Line:
                                     cursor="hand2", highlightthickness=0, bd=0, activebackground=BG_COLOR)
         self.add_button.grid(row=2, column=0)
         self.link = None
-        self.choice_frame = self.choice_frame = tk.Frame(self.frame)
-        self.choice_frame.grid(row=2, column=0)
-        self.choice_frame.grid_remove()
+        self.choice_frame = self.choice_frame = tk.Frame(self.frame, bg=BG_COLOR)
+        self.choice_frame.grid(row=1, columnspan=4)
 
     def update_query(self):
         self.query = "MATCH "
@@ -126,23 +126,39 @@ class Line:
         self.query += "(a) RETURN "
 
     def type_choice(self):
-        self.choice_frame.grid()
+        self.choice_frame.configure(bg=BG_COLOR)
+        for element in self.choice_frame.grid_slaves():
+            element.destroy()
         self.update_query()
-        types = []
+        types = ["Tissue", "Analysis", "Gene", "Protein", "Annotation"]
         # TODO types = py2neo.query(self.query + "DISTINCT labels(a)")
+        counter = -1
+        tk.Label(self.choice_frame, image=MORCEAU, bg=BG_COLOR, pady=0, anchor='s').grid(sticky='sw', padx=18)
+        self.choice_inner_frame = tk.Frame(self.choice_frame, bg=FONT_DARK_COLOR)
+        self.choice_inner_frame.grid()
         for possible_type in types:
-            possible_type = possible_type.split('"')[1]
-            node_btn = tk.Button(self.choice_frame, text=possible_type, command=lambda: self.select_node(possible_type))
+            counter += 1
+            # possible_type = possible_type.split('"')[1]
+            node_btn = tk.Button(self.choice_inner_frame, text=possible_type, relief='flat', bg=FONT_DARK_COLOR,
+                                 cursor="hand2",
+                                 highlightthickness=0, bd=0, activebackground=FONT_DARK_COLOR,
+                                 command=lambda x=possible_type: self.select_node(x))
             if possible_type in NODES_IMG:
                 node_btn.configure(image=NODES_IMG[possible_type])
+            node_btn.grid(row=(counter // 4), column=counter % 4, padx=5, pady=5)
 
     def select_node(self, node_type):
-        self.choice_frame.grid_remove()
+        for element in self.choice_frame.grid_slaves():
+            element.destroy()
+        self.choice_frame.configure({"width": 0,
+                                     "height": 5,
+                                     "bg": BG_COLOR})
         self.node_type = node_type
         if node_type in NODES_IMG:
-            self.node_icon.configure(image=NODES_IMG[node_type])
+            self.node_button.configure(image=NODES_IMG[node_type])
         else:
-            self.node_icon.configure(image=self.node_icon)
+            self.node_button.configure(image=self.node_icon)
+        update_global_query()
 
     def new_line(self):
         self.add_button.grid_forget()
@@ -156,29 +172,6 @@ class Line:
 class Link:
     simple_link_icon = tk.PhotoImage(file="Ressources/Lien.png")
     composed_link_icon = tk.PhotoImage(file="Ressources/Composed_Link.png")
-
-    def switch(self):
-        if self.simple:
-            self.simple = False
-            self.icon.configure(image=self.composed_link_icon)
-            self.min_frame.grid()
-            self.middle_frame.grid()
-            self.max_frame.grid()
-        else:
-            self.simple = True
-            self.icon.configure(image=self.simple_link_icon)
-            self.min_frame.grid_remove()
-            self.middle_frame.grid_remove()
-            self.max_frame.grid_remove()
-        update_global_query()
-
-    def update_max(self):
-        if self.max.get() < self.min.get():
-            self.max.set(self.min.get())
-
-    def update_min(self):
-        if self.max.get() < self.min.get():
-            self.min.set(self.max.get())
 
     def __init__(self):
         self.simple = True
@@ -221,6 +214,29 @@ class Link:
         self.min_frame.grid_remove()
         self.middle_frame.grid_remove()
         self.max_frame.grid_remove()
+
+    def switch(self):
+        if self.simple:
+            self.simple = False
+            self.icon.configure(image=self.composed_link_icon)
+            self.min_frame.grid()
+            self.middle_frame.grid()
+            self.max_frame.grid()
+        else:
+            self.simple = True
+            self.icon.configure(image=self.simple_link_icon)
+            self.min_frame.grid_remove()
+            self.middle_frame.grid_remove()
+            self.max_frame.grid_remove()
+        update_global_query()
+
+    def update_max(self):
+        if self.max.get() < self.min.get():
+            self.max.set(self.min.get())
+
+    def update_min(self):
+        if self.max.get() < self.min.get():
+            self.min.set(self.max.get())
 
 
 Line()
