@@ -1,12 +1,13 @@
 __author__ = "Bryan Oakley"
 import tkinter as tk
+from Colors import *
 
 
 class ScrollingFrame(tk.Frame):
-    def __init__(self,parent, root):
+    def __init__(self, parent, root):
         tk.Frame.__init__(self, parent)
-        self.canvas = tk.Canvas(parent, borderwidth=0, background="#ffffff", highlightthickness=0, height=540)
-        self.frame = tk.Frame(self.canvas, background="#ffffff")
+        self.canvas = tk.Canvas(parent, borderwidth=0, background=BG_COLOR, highlightthickness=0, height=540)
+        self.frame = tk.Frame(self.canvas, background=BG_COLOR)
         self.vsb = tk.Scrollbar(parent, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.vsb.set)
 
@@ -36,7 +37,3 @@ class ScrollingFrame(tk.Frame):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    ScrollingFrame(root).pack(side="top", fill="both", expand=True)
-    root.mainloop()

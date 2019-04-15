@@ -1,23 +1,18 @@
-import tkinter as tk
 import tkinter.ttk as ttk
+
+from Colors import *
 from ScrollingFrame import ScrollingFrame
 
-BG_COLOR = "white"
-ACCENT_COLOR = "#A2A2A2"
-FONT_CLEAR_COLOR = "white"
-FONT_DARK_COLOR = "#C4C4C4"
-
 root = tk.Tk()
-root.title = "Cypher Query Creator"
-root.iconbitmap = "Ressources/icon.ico"
-root.configure(bg="white")
+root.title("Cypher Query Creator")
+# root.iconbitmap("icon.ico")
+root.configure(bg=BG_COLOR)
 
 try:
-    root.wm_title = "Cypher Query Creator"
-    root.wm_iconbitmap = "Ressources/icon.ico"
+    root.wm_title("Cypher Query Creator")
+    root.wm_iconbitmap("icon.ico")
 except:
     pass
-
 query = tk.StringVar()
 query.set("MATCH")
 tk.Label(root, textvariable=query, width=40, anchor='e', bg=BG_COLOR).pack()
@@ -30,7 +25,7 @@ def id_generator():
         yield letter
 
 
-def update_query(*args):
+def update_global_query(*args):
     ids = id_generator()
     matches = "MATCH "
     returned = " RETURN "
@@ -43,7 +38,7 @@ def update_query(*args):
             matches += "{}".format(node_id)
             returned += "{}, ".format(node_id)
             return_sth = True
-        matches += ":{}".format(node.type)
+        matches += ":{}".format(node.node_type)
         if node.name.get() != "":
             matches += ' {{name: "{}" }}'.format(node.name.get())
         matches += ")"
@@ -76,14 +71,6 @@ lower_line_canvas.pack()
 lower_line_canvas.create_line(0, 5, line_width, 5, fill=ACCENT_COLOR)
 
 
-# scrolling_canvas = Canvas(root, height=800, bg="white")
-# scrollbar = Scrollbar(work_frame, orient="vertical", command=scrolling_canvas.yview)
-# scrolling_canvas.configure(yscrollcommand=scrollbar.set)
-# scrolling_canvas.pack(side="left")
-# scrollbar.pack(side="right", fill="y")
-# frame.bind("<Configure>", myfunction)
-
-
 class Line:
     node_icon = tk.PhotoImage(file="Ressources/Unknown_node.png")
     add_icon = tk.PhotoImage(file="Ressources/Add_button.png")
@@ -97,31 +84,72 @@ class Line:
         self.frame.pack(anchor='w', padx=15)
 
         type_variable = tk.StringVar()
+        # self.type_options = []
+        self.name_options = []
+        self.query = ""
 
-        tk.OptionMenu(self.frame, image=self.node_icon, relief='flat', bg=BG_COLOR, cursor="hand2").grid(row=0, column=0)
-        self.type = ""
+        tk.Button(self.frame, image=self.node_icon, relief='flat', bg=BG_COLOR, cursor="hand2", highlightthickness=0,
+                  bd=0, activebackground=BG_COLOR, command=self.type_choice).grid(row=0, column=0)
+        self.node_type = ""
         self.returned = tk.IntVar()
         self.name = tk.StringVar()
-        tk.Checkbutton(self.frame, variable=self.returned, text="name : ", bg=BG_COLOR).grid(row=0, column=1)
-        ttk.Combobox(self.frame, textvariable=self.name, width=30, cursor="hand2").grid(row=0, column=2)
+        tk.Checkbutton(self.frame, variable=self.returned, text="name : ", bg=BG_COLOR, highlightthickness=0,
+                       bd=0).grid(row=0,
+                                  column=1)
+        ttk.Combobox(self.frame, textvariable=self.name, width=20, cursor="hand2").grid(row=0, column=2)
 
-        self.name.trace('w', update_query)
-        self.returned.trace('w', update_query)
+        self.name.trace('w', update_global_query)
+        self.returned.trace('w', update_global_query)
         self.add_button = tk.Button(self.frame, image=self.add_icon, relief='flat', command=self.new_line, bg=BG_COLOR,
-                                    cursor="hand2")
+                                    cursor="hand2", highlightthickness=0, bd=0, activebackground=BG_COLOR)
         self.add_button.grid(row=2, column=0)
         self.link = None
+        self.choice_frame = self.choice_frame = tk.Frame(self.frame)
+        self.choice_frame.grid(row=2, column=0)
+        self.choice_frame.grid_remove()
+
+    def update_query(self):
+        self.query = "MATCH "
+        for node in nodes:
+            if node is self:
+                break
+            self.query += "("
+            self.query += ":{}".format(node.node_type)
+            if node.name.get() != "":
+                self.query += ' {{name: "{}" }}'.format(node.name.get())
+            self.query += ")"
+
+            if node.link:
+                if node.link.simple:
+                    self.query += "-"
+                else:
+                    self.query += "-[*{}..{}]-".format(node.link.min.get(), node.link.max.get())
+        self.query += "(a) RETURN "
 
     def type_choice(self):
-        choice_frame = tk.Frame(self.frame)
-        choice_frame.grid(row=2, column=0)
+        self.choice_frame.grid()
+        self.update_query()
+        types = []
+        # TODO types = py2neo.query(self.query + "DISTINCT labels(a)")
+        for possible_type in types:
+            possible_type = possible_type.split('"')[1]
+            node_btn = tk.Button(self.choice_frame, text=possible_type, command=lambda: self.select_node(possible_type))
+            if possible_type in NODES_IMG:
+                node_btn.configure(image=NODES_IMG[possible_type])
 
+    def select_node(self, node_type):
+        self.choice_frame.grid_remove()
+        self.node_type = node_type
+        if node_type in NODES_IMG:
+            self.node_icon.configure(image=NODES_IMG[node_type])
+        else:
+            self.node_icon.configure(image=self.node_icon)
 
     def new_line(self):
         self.add_button.grid_forget()
         self.link = Link()
         Line()
-        update_query()
+        update_global_query()
         work_frame.on_frame_configure()
         work_frame.after(50, lambda: work_frame.scroll_to_end())
 
@@ -143,7 +171,7 @@ class Link:
             self.min_frame.grid_remove()
             self.middle_frame.grid_remove()
             self.max_frame.grid_remove()
-        update_query()
+        update_global_query()
 
     def update_max(self):
         if self.max.get() < self.min.get():
@@ -158,7 +186,7 @@ class Link:
         self.frame = tk.Frame(work_frame.frame, bg=BG_COLOR)
         self.frame.pack(anchor='w', padx=45)
         self.icon = tk.Button(self.frame, relief='flat', image=self.simple_link_icon, command=self.switch, bg=BG_COLOR,
-                              cursor="hand2")
+                              cursor="hand2", highlightthickness=0, bd=0, activebackground=BG_COLOR)
         self.icon.grid(row=0, column=0)
         self.min = tk.IntVar()
         self.max = tk.IntVar()
@@ -188,8 +216,8 @@ class Link:
                                    command=self.update_min, textvariable=self.max)
         self.max_spin.grid(row=1)
 
-        self.min.trace('w', update_query)
-        self.max.trace('w', update_query)
+        self.min.trace('w', update_global_query)
+        self.max.trace('w', update_global_query)
 
         self.min_frame.grid_remove()
         self.middle_frame.grid_remove()
@@ -197,5 +225,6 @@ class Link:
 
 
 Line()
-update_query()
+update_global_query()
+work_frame.on_frame_configure()
 root.mainloop()
