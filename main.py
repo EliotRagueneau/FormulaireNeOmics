@@ -1,12 +1,16 @@
-from Colors import *
-import tkinter.ttk as ttk
 from tkinter.font import *
+
+from py2neo import Graph
+
+from tkentrycomplete import AutocompleteCombobox
+from Colors import *
 from ScrollingFrame import ScrollingFrame
+
+graph = Graph("localhost:7687", auth=("neo4j", "1234"))
 
 font = Font(family="Roboto", size=10)
 
 root.title("Cypher Query Creator")
-# root.iconbitmap("icon.ico")
 root.configure(bg=BG_COLOR)
 
 try:
@@ -32,21 +36,22 @@ def update_global_query(*args):
     returned = " RETURN "
     return_sth = False
     for node in nodes:
-
+        node.update_name_list()
         matches += "("
         if node.returned.get() == 1:
             node_id = next(ids)
             matches += "{}".format(node_id)
             returned += "{}, ".format(node_id)
             return_sth = True
-        matches += ":{}".format(node.node_type)
+        if node.node_type:
+            matches += ":{}".format(node.node_type)
         if node.name.get() != "":
             matches += ' {{name: "{}" }}'.format(node.name.get())
         matches += ")"
 
         if node.link:
             if node.link.simple:
-                matches += "-"
+                matches += "--"
             else:
                 matches += "-[*{}..{}]-".format(node.link.min.get(), node.link.max.get())
     if return_sth:
@@ -98,8 +103,8 @@ class Line:
         self.name = tk.StringVar()
         tk.Checkbutton(self.frame, variable=self.returned, text="name : ", bg=BG_COLOR, highlightthickness=0,
                        bd=0, font=font, activebackground=BG_COLOR).grid(row=0, column=1)
-        ttk.Combobox(self.frame, textvariable=self.name, width=20, cursor="hand2", font=font).grid(row=0, column=2)
-
+        self.name_box = AutocompleteCombobox(self.frame, textvariable=self.name, width=20, cursor="hand2", font=font)
+        self.name_box.grid(row=0, column=2)
         self.name.trace('w', update_global_query)
         self.returned.trace('w', update_global_query)
         self.add_button = tk.Button(self.frame, image=self.add_icon, relief='flat', command=self.new_line, bg=BG_COLOR,
@@ -117,17 +122,17 @@ class Line:
             if node is self:
                 break
             self.query += "("
-            self.query += ":{}".format(node.node_type)
+            if node.node_type:
+                self.query += ":{}".format(node.node_type)
             if node.name.get() != "":
                 self.query += ' {{name: "{}" }}'.format(node.name.get())
             self.query += ")"
 
             if node.link:
                 if node.link.simple:
-                    self.query += "-"
+                    self.query += "--"
                 else:
                     self.query += "-[*{}..{}]-".format(node.link.min.get(), node.link.max.get())
-        self.query += "(a) RETURN "
 
     def type_choice(self):
         # TODO Fix the gap between MORCEAU and inner_frame
@@ -137,18 +142,18 @@ class Line:
         for element in self.choice_frame.grid_slaves():
             element.destroy()
         self.update_query()
-        types = ["Tissue", "Analysis", "Gene", "Protein", "Annotation"]
-        # TODO types = py2neo.query(self.query + "DISTINCT labels(a)")
+        # types = ["Tissue", "Analysis", "Gene", "Protein", "Annotation"]
+        types_query = self.query + "(a) RETURN DISTINCT labels(a) as type"
+        types = [result['type'][0] for result in graph.run(types_query)]
         types.append("Unknown")
-        counter = -1
         tk.Label(self.choice_frame, image=MORCEAU, bg=BG_COLOR, pady=0, anchor='s').grid(sticky='sw', padx=18)
         self.choice_inner_frame = tk.Frame(self.choice_frame, bg=FONT_DARK_COLOR)
         self.choice_inner_frame.grid()
+        counter = -1
         for possible_type in types:
             counter += 1
-            # possible_type = possible_type.split('"')[1]
             node_btn = tk.Button(self.choice_inner_frame, text=possible_type, relief='flat', bg=FONT_DARK_COLOR,
-                                 cursor="hand2", font=font,
+                                 cursor="hand2", font=font, fg=FONT_CLEAR_COLOR,
                                  highlightthickness=0, bd=0, activebackground=FONT_DARK_COLOR,
                                  command=lambda x=possible_type: self.select_node(x))
             if possible_type in NODES_IMG:
@@ -168,6 +173,16 @@ class Line:
         else:
             self.node_button.configure(image=NODES_IMG['Unknown'])
         update_global_query()
+
+    def update_name_list(self):
+        self.update_query()
+        name_query = self.query + '(a'
+        if self.node_type:
+            name_query += ":{}".format(self.node_type)
+        name_query += ') RETURN a.name'
+        completion_list = {result['a.name'] for result in graph.run(name_query) if result['a.name'] is not None}
+        print(completion_list)
+        self.name_box.set_completion_list(completion_list)
 
     def new_line(self):
         self.add_button.grid_forget()

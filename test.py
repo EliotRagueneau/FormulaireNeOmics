@@ -1,7 +1,6 @@
-from HoveringInfo import *
+from py2neo import Graph
 
-root = Tk()
-x = Label(root, text="test")
-x.pack()
-HoverInfo(x,"description")
-root.mainloop()
+graph = Graph(auth=("neo4j", "1234"))
+results = graph.run("match (a:Person) return a.name")
+for result in results:
+    print(result['a.name'])
