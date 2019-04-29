@@ -1,10 +1,9 @@
 from tkinter.font import *
-
 from py2neo import Graph
 
-from tkentrycomplete import AutocompleteCombobox
 from Colors import *
 from ScrollingFrame import ScrollingFrame
+from tkentrycomplete import AutocompleteCombobox
 
 graph = Graph("localhost:7687", auth=("neo4j", "1234"))
 
@@ -39,9 +38,9 @@ def update_global_query(*args):
         node.update_name_list()
         matches += "("
         if node.returned.get() == 1:
-            node_id = next(ids)
-            matches += "{}".format(node_id)
-            returned += "{}, ".format(node_id)
+            link_id = next(ids)
+            matches += "{}".format(link_id)
+            returned += "{}, ".format(link_id)
             return_sth = True
         if node.node_type:
             matches += ":{}".format(node.node_type)
@@ -49,11 +48,23 @@ def update_global_query(*args):
             matches += ' {{name: "{}" }}'.format(node.name.get())
         matches += ")"
 
-        if node.link:
-            if node.link.simple:
-                matches += "--"
+        link = node.link
+        if link:
+            link.update_type_list()
+            matches += "-["
+            if link.simple:
+                link_type = link.type.get()
+                if link.returned.get() == 1:
+                    link_id = next(ids)
+                    matches += "{}".format(link_id)
+                    returned += "{}, ".format(link_id)
+                    return_sth = True
+                if link_type:
+                    matches += ":{}".format(link_type)
             else:
-                matches += "-[*{}..{}]-".format(node.link.min.get(), node.link.max.get())
+                matches += "*{}..{}".format(link.min.get(), link.max.get())
+            matches += "]-"
+
     if return_sth:
         returned = returned[:-2]
     query.set(matches + returned)
@@ -91,22 +102,21 @@ class Line:
         self.frame = tk.Frame(work_frame.frame, relief='flat', bg=BG_COLOR)
         self.frame.pack(anchor='w', padx=15)
 
-        self.name_options = []
-        self.query = ""
-
         self.node_button = tk.Button(self.frame, image=NODES_IMG['Unknown'], relief='flat', bg=BG_COLOR, cursor="hand2",
                                      highlightthickness=0, bd=0, activebackground=BG_COLOR, command=self.type_choice,
                                      font=font)
         self.node_button.grid(row=0, column=0)
         self.node_type = ""
         self.returned = tk.IntVar()
-        self.name = tk.StringVar()
         tk.Checkbutton(self.frame, variable=self.returned, text="name : ", bg=BG_COLOR, highlightthickness=0,
                        bd=0, font=font, activebackground=BG_COLOR).grid(row=0, column=1)
-        self.name_box = AutocompleteCombobox(self.frame, textvariable=self.name, width=20, cursor="hand2", font=font)
-        self.name_box.grid(row=0, column=2)
-        self.name.trace('w', update_global_query)
         self.returned.trace('w', update_global_query)
+
+        self.name = tk.StringVar()
+        self.name_options = []
+        self.name_box = AutocompleteCombobox(self.frame, textvariable=self.name, width=20, cursor="hand2", font=font)
+        self.name.trace('w', update_global_query)
+        self.name_box.grid(row=0, column=2)
         self.add_button = tk.Button(self.frame, image=self.add_icon, relief='flat', command=self.new_line, bg=BG_COLOR,
                                     cursor="hand2", highlightthickness=0, bd=0, activebackground=BG_COLOR)
         self.add_button.grid(row=2, column=0)
@@ -116,23 +126,35 @@ class Line:
                                                   "bg": BG_COLOR})
         self.choice_frame.grid(row=1, columnspan=4)
 
-    def update_query(self):
-        self.query = "MATCH "
+    @property
+    def descriptor(self):
+        cypher = "("
+        if self.node_type:
+            cypher += ":{}".format(self.node_type)
+        if self.name.get() != "":
+            cypher += ' {{name: "{}" }}'.format(self.name.get())
+        return cypher + ")"
+
+    @property
+    def query(self):
+        cypher = "MATCH "
         for node in nodes:
             if node is self:
                 break
-            self.query += "("
-            if node.node_type:
-                self.query += ":{}".format(node.node_type)
-            if node.name.get() != "":
-                self.query += ' {{name: "{}" }}'.format(node.name.get())
-            self.query += ")"
+            cypher += node.descriptor
 
-            if node.link:
-                if node.link.simple:
-                    self.query += "--"
+            link = node.link
+            if link:
+                link.update_type_list()
+                cypher += "-["
+                if link.simple:
+                    link_type = link.type.get()
+                    if link_type:
+                        cypher += ":{}".format(link_type)
                 else:
-                    self.query += "-[*{}..{}]-".format(node.link.min.get(), node.link.max.get())
+                    cypher += "*{}..{}".format(link.min.get(), link.max.get())
+                cypher += "]-"
+        return cypher
 
     def type_choice(self):
         # TODO Fix the gap between MORCEAU and inner_frame
@@ -141,8 +163,6 @@ class Line:
         self.choice_frame.configure(bg=BG_COLOR)
         for element in self.choice_frame.grid_slaves():
             element.destroy()
-        self.update_query()
-        # types = ["Tissue", "Analysis", "Gene", "Protein", "Annotation"]
         types_query = self.query + "(a) RETURN DISTINCT labels(a) as type"
         types = [result['type'][0] for result in graph.run(types_query)]
         types.append("Unknown")
@@ -175,18 +195,16 @@ class Line:
         update_global_query()
 
     def update_name_list(self):
-        self.update_query()
         name_query = self.query + '(a'
         if self.node_type:
             name_query += ":{}".format(self.node_type)
         name_query += ') RETURN a.name'
         completion_list = {result['a.name'] for result in graph.run(name_query) if result['a.name'] is not None}
-        print(completion_list)
         self.name_box.set_completion_list(completion_list)
 
     def new_line(self):
         self.add_button.grid_forget()
-        self.link = Link()
+        self.link = Link(self)
         Line()
         update_global_query()
         work_frame.on_frame_configure()
@@ -199,22 +217,40 @@ class Link:
 
     # TODO Relation type
 
-    def __init__(self):
+    def __init__(self, previous: Line):
+        self.previous = previous
         self.simple = True
         self.frame = tk.Frame(work_frame.frame, bg=BG_COLOR)
         self.frame.pack(anchor='w', padx=45)
         self.icon = tk.Button(self.frame, relief='flat', image=self.simple_link_icon, command=self.switch, bg=BG_COLOR,
                               cursor="hand2", highlightthickness=0, bd=0, activebackground=BG_COLOR)
         self.icon.grid(row=0, column=0)
+
+        self.returned = tk.IntVar()
+        tk.Checkbutton(self.frame, variable=self.returned, bg=BG_COLOR, highlightthickness=0,
+                       bd=0, activebackground=BG_COLOR).grid(row=0, column=1)
+        self.returned.trace('w', update_global_query)
+
+        self.type_frame = tk.Frame(self.frame, bg=BG_COLOR)
+        self.type_frame.grid(row=0, column=2)
+        tk.Label(self.type_frame, text="type :", font=font, bg=BG_COLOR, fg=ACCENT_COLOR).pack(side="left")
+        self.type = tk.StringVar()
+        self.type_options = []
+        self.type_box = AutocompleteCombobox(self.type_frame, textvariable=self.type, width=20, cursor="hand2",
+                                             font=font)
+        self.type.trace('w', update_global_query)
+        self.type_box.pack(side="right")
+        self.update_type_list()
+
         self.min = tk.IntVar()
         self.max = tk.IntVar()
 
         self.min_frame = tk.Frame(self.frame, bg=BG_COLOR)
         self.middle_frame = tk.Frame(self.frame, bg=BG_COLOR)
         self.max_frame = tk.Frame(self.frame, bg=BG_COLOR)
-        self.min_frame.grid(row=0, column=1)
-        self.middle_frame.grid(row=0, column=2)
-        self.max_frame.grid(row=0, column=3, padx=3)
+        self.min_frame.grid(row=0, column=2)
+        self.middle_frame.grid(row=0, column=3)
+        self.max_frame.grid(row=0, column=4, padx=3)
 
         tk.Label(self.min_frame, text="from", bg=BG_COLOR, fg=ACCENT_COLOR, font=font).grid(row=0)
         self.min_spin = tk.Spinbox(self.min_frame, from_=1, to=20, width=2, bg=ACCENT_COLOR, fg=FONT_CLEAR_COLOR,
@@ -224,9 +260,9 @@ class Link:
         self.min_spin.grid(row=1)
 
         tk.Label(self.middle_frame, text="", bg=BG_COLOR, fg=ACCENT_COLOR).grid(row=0)
-        tk.Label(self.min_frame, text="", bg=BG_COLOR).grid(row=2)
-        tk.Label(self.middle_frame, text="", bg=BG_COLOR).grid(row=2)
-        tk.Label(self.max_frame, text="", bg=BG_COLOR).grid(row=2)
+        for frame in [self.min_frame, self.middle_frame, self.max_frame]:
+            tk.Label(frame, text="", bg=BG_COLOR).grid(row=2)
+
         tk.Label(self.middle_frame, text="..", bg=BG_COLOR, fg=ACCENT_COLOR, font=font).grid(row=1)
         tk.Label(self.max_frame, text="to", bg=BG_COLOR, fg=ACCENT_COLOR, font=font).grid(row=0, sticky='w')
         self.max_spin = tk.Spinbox(self.max_frame, from_=1, to=20, width=2, bg=ACCENT_COLOR, fg=FONT_CLEAR_COLOR,
@@ -241,8 +277,15 @@ class Link:
         self.middle_frame.grid_remove()
         self.max_frame.grid_remove()
 
+    def update_type_list(self):
+        type_query = self.previous.query + self.previous.descriptor + '-[r]-() RETURN DISTINCT type(r) as types'
+        completion_list = {result['types'] for result in graph.run(type_query) if result['types'] is not None}
+        print(completion_list)
+        self.type_box.set_completion_list(completion_list)
+
     def switch(self):
         if self.simple:
+            self.type_frame.grid_remove()
             self.simple = False
             self.icon.configure(image=self.composed_link_icon)
             self.min_frame.grid()
@@ -251,6 +294,7 @@ class Link:
         else:
             self.simple = True
             self.icon.configure(image=self.simple_link_icon)
+            self.type_frame.grid()
             self.min_frame.grid_remove()
             self.middle_frame.grid_remove()
             self.max_frame.grid_remove()
