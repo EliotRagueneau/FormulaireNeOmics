@@ -205,7 +205,6 @@ class Line:
     def new_line(self):
         self.add_button.grid_forget()
         self.link = Link(self)
-        Line()
         update_global_query()
         work_frame.on_frame_configure()
         work_frame.after(50, lambda: work_frame.scroll_to_end())
@@ -218,7 +217,6 @@ class Link:
     # TODO Relation type
 
     def __init__(self, previous: Line):
-        self.previous = previous
         self.simple = True
         self.frame = tk.Frame(work_frame.frame, bg=BG_COLOR)
         self.frame.pack(anchor='w', padx=45)
@@ -240,7 +238,6 @@ class Link:
                                              font=font)
         self.type.trace('w', update_global_query)
         self.type_box.pack(side="right")
-        self.update_type_list()
 
         self.min = tk.IntVar()
         self.max = tk.IntVar()
@@ -277,8 +274,14 @@ class Link:
         self.middle_frame.grid_remove()
         self.max_frame.grid_remove()
 
+        self.previous = previous
+        self.next = Line()
+        self.update_type_list()
+
+
     def update_type_list(self):
-        type_query = self.previous.query + self.previous.descriptor + '-[r]-() RETURN DISTINCT type(r) as types'
+        type_query = self.previous.query + self.previous.descriptor + '-[r]-{} RETURN DISTINCT type(r) as types'.format(
+            self.next.descriptor)
         completion_list = {result['types'] for result in graph.run(type_query) if result['types'] is not None}
         print(completion_list)
         self.type_box.set_completion_list(completion_list)
