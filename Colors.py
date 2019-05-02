@@ -15,3 +15,5 @@ NODES_IMG = {"Tissue": ImageTk.PhotoImage(Image.open("Ressources/Tissue.png")),
              "Annotation": ImageTk.PhotoImage(Image.open("Ressources/Annot.png")),
              "Unknown": ImageTk.PhotoImage(Image.open("Ressources/Unknown_node.png"))
              }
+ADD_ICON = tk.PhotoImage(file="Ressources/Add_button.png")
+REMOVE_ICON = tk.PhotoImage(file="Ressources/Remove_line.png")

@@ -1,4 +1,6 @@
+from string import ascii_lowercase
 from tkinter.font import *
+
 from py2neo import Graph
 
 from Colors import *
@@ -17,6 +19,7 @@ try:
     root.wm_iconbitmap("icon.ico")
 except:
     pass
+
 query = tk.StringVar()
 query.set("MATCH")
 tk.Label(root, textvariable=query, width=40, anchor='e', bg=BG_COLOR, font=font).pack()
@@ -25,8 +28,9 @@ nodes = []
 
 
 def id_generator():
-    for letter in "abcedfghijklmnopqrstuvwxyz":
-        yield letter
+    for size in itertools.count(1):
+        for s in itertools.product(ascii_lowercase, repeat=size):
+            yield "".join(s)
 
 
 def update_global_query(*args):
@@ -35,12 +39,11 @@ def update_global_query(*args):
     returned = " RETURN "
     return_sth = False
     for node in nodes:
-        node.update_name_list()
         matches += "("
         if node.returned.get() == 1:
-            link_id = next(ids)
-            matches += "{}".format(link_id)
-            returned += "{}, ".format(link_id)
+            node_id = next(ids)
+            matches += "{}".format(node_id)
+            returned += "{}, ".format(node_id)
             return_sth = True
         if node.node_type:
             matches += ":{}".format(node.node_type)
@@ -50,7 +53,6 @@ def update_global_query(*args):
 
         link = node.link
         if link:
-            link.update_type_list()
             matches += "-["
             if link.simple:
                 link_type = link.type.get()
@@ -121,10 +123,12 @@ class Line:
                                     cursor="hand2", highlightthickness=0, bd=0, activebackground=BG_COLOR)
         self.add_button.grid(row=2, column=0)
         self.link = None
-        self.choice_frame = tk.Frame(self.frame, {"width": 0,
+        self.next = None
+        self.choice_frame = tk.Frame(self.frame, {"width" : 0,
                                                   "height": 5,
-                                                  "bg": BG_COLOR})
+                                                  "bg"    : BG_COLOR})
         self.choice_frame.grid(row=1, columnspan=4)
+        self.update_name_list()
 
     @property
     def descriptor(self):
@@ -184,14 +188,15 @@ class Line:
         self.node_button.configure(command=self.type_choice)
         for element in self.choice_frame.grid_slaves():
             element.destroy()
-        self.choice_frame.configure({"width": 0,
+        self.choice_frame.configure({"width" : 0,
                                      "height": 5,
-                                     "bg": BG_COLOR})
+                                     "bg"    : BG_COLOR})
         self.node_type = node_type if node_type != "Unknown" else ""
         if node_type in NODES_IMG:
             self.node_button.configure(image=NODES_IMG[node_type])
         else:
             self.node_button.configure(image=NODES_IMG['Unknown'])
+        self.update_name_list()
         update_global_query()
 
     def update_name_list(self):
@@ -213,8 +218,6 @@ class Line:
 class Link:
     simple_link_icon = tk.PhotoImage(file="Ressources/Lien.png")
     composed_link_icon = tk.PhotoImage(file="Ressources/Composed_Link.png")
-
-    # TODO Relation type
 
     def __init__(self, previous: Line):
         self.simple = True
@@ -277,7 +280,6 @@ class Link:
         self.previous = previous
         self.next = Line()
         self.update_type_list()
-
 
     def update_type_list(self):
         type_query = self.previous.query + self.previous.descriptor + '-[r]-{} RETURN DISTINCT type(r) as types'.format(
