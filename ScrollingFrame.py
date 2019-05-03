@@ -4,9 +4,9 @@ from Colors import *
 
 
 class ScrollingFrame(tk.Frame):
-    def __init__(self, parent, root):
+    def __init__(self, parent, root, height=540):
         tk.Frame.__init__(self, parent)
-        self.canvas = tk.Canvas(parent, borderwidth=0, background=BG_COLOR, highlightthickness=0, height=540)
+        self.canvas = tk.Canvas(parent, borderwidth=0, background=BG_COLOR, highlightthickness=0, height=height)
         self.frame = tk.Frame(self.canvas, background=BG_COLOR)
         self.vsb = tk.Scrollbar(parent, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.vsb.set)
