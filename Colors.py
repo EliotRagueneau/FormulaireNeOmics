@@ -1,19 +1,22 @@
+from pathlib import Path
+from tkinter.font import Font
 import tkinter as tk
-from PIL import Image, ImageTk
-root = tk.Tk()
+
+resources = Path("C:/Users/Eliot/PycharmProjects/FormulaireNeOmics/Ressources")
 
 BG_COLOR = "#FFFFFF"
 ACCENT_COLOR = "#A2A2A2"
 FONT_CLEAR_COLOR = "white"
 FONT_DARK_COLOR = "#C4C4C4"
 
-MORCEAU = tk.PhotoImage(file="Ressources\morceau.png")
-NODES_IMG = {"Tissue": ImageTk.PhotoImage(Image.open("Ressources/Tissue.png")),
-            "Analysis": ImageTk.PhotoImage(Image.open("Ressources/Analysis.png")),
-            "Gene": ImageTk.PhotoImage(Image.open("Ressources/Gene.png")),
-            "Protein": ImageTk.PhotoImage(Image.open("Ressources/Protein.png")),
-            "Annotation": ImageTk.PhotoImage(Image.open("Ressources/Annot.png")),
-            "Unknown": ImageTk.PhotoImage(Image.open("Ressources/Unknown_node.png"))
-            }
-ADD_ICON = tk.PhotoImage(file="Ressources/Add_button.png")
-REMOVE_ICON = tk.PhotoImage(file="Ressources/Remove_line.png")
+MORCEAU = tk.PhotoImage(str(resources / "morceau.png"))
+NODES_IMG = {"Tissue": tk.PhotoImage(str(resources / "Tissue.png")),
+             "Analysis": tk.PhotoImage(str(resources / "Analysis.png")),
+             "Gene": tk.PhotoImage(str(resources / "Gene.png")),
+             "Protein": tk.PhotoImage(str(resources / "Protein.png")),
+             "Annotation": tk.PhotoImage(str(resources / "Annot.png")),
+             "Unknown": tk.PhotoImage(str(resources / "Unknown_node.png"))
+             }
+ADD_ICON = tk.PhotoImage(str(resources / "Add_button.png"))
+REMOVE_ICON = tk.PhotoImage(str(resources / "Remove_line.png"))
+FONT = Font(family="Arial", size=10)

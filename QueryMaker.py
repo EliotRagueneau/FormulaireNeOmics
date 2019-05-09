@@ -106,17 +106,17 @@ class Line:
 
         self.node_button = tk.Button(self.frame, image=NODES_IMG['Unknown'], relief='flat', bg=BG_COLOR, cursor="hand2",
                                      highlightthickness=0, bd=0, activebackground=BG_COLOR, command=self.type_choice,
-                                     font=font)
+                                     font=FONT)
         self.node_button.grid(row=0, column=0)
         self.node_type = ""
         self.returned = tk.IntVar()
         tk.Checkbutton(self.frame, variable=self.returned, text="name : ", bg=BG_COLOR, highlightthickness=0,
-                       bd=0, font=font, activebackground=BG_COLOR).grid(row=0, column=1)
+                       bd=0, font=FONT, activebackground=BG_COLOR).grid(row=0, column=1)
         self.returned.trace('w', update_global_query)
 
         self.name = tk.StringVar()
         self.name_options = []
-        self.name_box = AutocompleteCombobox(self.frame, textvariable=self.name, width=20, cursor="hand2", font=font)
+        self.name_box = AutocompleteCombobox(self.frame, textvariable=self.name, width=20, cursor="hand2", font=FONT)
         self.name.trace('w', update_global_query)
         self.name_box.grid(row=0, column=2)
         self.add_button = tk.Button(self.frame, image=self.add_icon, relief='flat', command=self.new_line, bg=BG_COLOR,
@@ -177,7 +177,7 @@ class Line:
         for possible_type in types:
             counter += 1
             node_btn = tk.Button(self.choice_inner_frame, text=possible_type, relief='flat', bg=FONT_DARK_COLOR,
-                                 cursor="hand2", font=font, fg=FONT_CLEAR_COLOR,
+                                 cursor="hand2", font=FONT, fg=FONT_CLEAR_COLOR,
                                  highlightthickness=0, bd=0, activebackground=FONT_DARK_COLOR,
                                  command=lambda x=possible_type: self.select_node(x))
             if possible_type in NODES_IMG:
@@ -234,11 +234,11 @@ class Link:
 
         self.type_frame = tk.Frame(self.frame, bg=BG_COLOR)
         self.type_frame.grid(row=0, column=2)
-        tk.Label(self.type_frame, text="type :", font=font, bg=BG_COLOR, fg=ACCENT_COLOR).pack(side="left")
+        tk.Label(self.type_frame, text="type :", font=FONT, bg=BG_COLOR, fg=ACCENT_COLOR).pack(side="left")
         self.type = tk.StringVar()
         self.type_options = []
         self.type_box = AutocompleteCombobox(self.type_frame, textvariable=self.type, width=20, cursor="hand2",
-                                             font=font)
+                                             font=FONT)
         self.type.trace('w', update_global_query)
         self.type_box.pack(side="right")
 
@@ -252,10 +252,10 @@ class Link:
         self.middle_frame.grid(row=0, column=3)
         self.max_frame.grid(row=0, column=4, padx=3)
 
-        tk.Label(self.min_frame, text="from", bg=BG_COLOR, fg=ACCENT_COLOR, font=font).grid(row=0)
+        tk.Label(self.min_frame, text="from", bg=BG_COLOR, fg=ACCENT_COLOR, font=FONT).grid(row=0)
         self.min_spin = tk.Spinbox(self.min_frame, from_=1, to=20, width=2, bg=ACCENT_COLOR, fg=FONT_CLEAR_COLOR,
                                    insertbackground=FONT_CLEAR_COLOR, relief='flat',
-                                   command=self.update_max, textvariable=self.min, font=font)
+                                   command=self.update_max, textvariable=self.min, font=FONT)
 
         self.min_spin.grid(row=1)
 
@@ -263,11 +263,11 @@ class Link:
         for frame in [self.min_frame, self.middle_frame, self.max_frame]:
             tk.Label(frame, text="", bg=BG_COLOR).grid(row=2)
 
-        tk.Label(self.middle_frame, text="..", bg=BG_COLOR, fg=ACCENT_COLOR, font=font).grid(row=1)
-        tk.Label(self.max_frame, text="to", bg=BG_COLOR, fg=ACCENT_COLOR, font=font).grid(row=0, sticky='w')
+        tk.Label(self.middle_frame, text="..", bg=BG_COLOR, fg=ACCENT_COLOR, font=FONT).grid(row=1)
+        tk.Label(self.max_frame, text="to", bg=BG_COLOR, fg=ACCENT_COLOR, font=FONT).grid(row=0, sticky='w')
         self.max_spin = tk.Spinbox(self.max_frame, from_=1, to=20, width=2, bg=ACCENT_COLOR, fg=FONT_CLEAR_COLOR,
                                    insertbackground=FONT_CLEAR_COLOR, relief='flat',
-                                   command=self.update_min, textvariable=self.max, font=font)
+                                   command=self.update_min, textvariable=self.max, font=FONT)
         self.max_spin.grid(row=1)
 
         self.min.trace('w', update_global_query)

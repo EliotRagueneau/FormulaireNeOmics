@@ -57,11 +57,8 @@ def main(graph):
   viewTexture = graph.getStringProperty("viewTexture")
   viewTgtAnchorShape = graph.getIntegerProperty("viewTgtAnchorShape")
   viewTgtAnchorSize = graph.getSizeProperty("viewTgtAnchorSize")
-
-  for n in graph.getNodes():
-    print(n)
-    properties = graph.getNodePropertiesValues(n)
-    if properties["name"]:
-      graph.setNodePropertiesValues(n,{"viewLabel": properties["name"], "viewColor": tlp.Color(23, 144, 212)})
-    elif properties["title"]:
-      graph.setNodePropertiesValues(n,{"viewLabel": properties["title"],  "viewColor": tlp.Color(212, 23, 23)})
+  
+  small_multiple = graph.addSubGraph(name="Small Multiples")
+  tlp.copyToGraph(small_multiple, graph)
+  
+  
