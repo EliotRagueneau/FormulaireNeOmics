@@ -21,6 +21,7 @@ import xml.sax
 import tulipplugins
 from py2neo import *
 from tulip import *
+from tulipgui import tlpgui
 
 # map GraphML node id to Tulip node
 idToNode = {}
@@ -125,13 +126,13 @@ class TulipGraphMLHandler(xml.sax.ContentHandler):
     # reset current element parsed
     def endElement(self, name):
         if name == 'node':
-            properties = self.graph.getNodePropertiesValues(self.currentNode)
-            if properties.exist("name"):
-                self.viewLabel[self.currentNode] = properties["name"]
-            if properties.exist("id"):
-                self.viewLabel[self.currentNode] = properties["id"]
-            if properties.exist("family"):
-                self.viewLabel[self.currentNode] = properties["family"]
+#            properties = self.graph.getNodePropertiesValues(self.currentNode)
+#            if properties.exist("name"):
+#                self.viewLabel[self.currentNode] = properties["name"]
+#            if properties.exist("id"):
+#                self.viewLabel[self.currentNode] = properties["id"]
+#            if properties.exist("family"):
+#                self.viewLabel[self.currentNode] = properties["family"]
             self.currentNode = None
         elif name == 'edge':
             self.currentEdge = None
@@ -217,7 +218,7 @@ class Import_graph(tlp.ImportModule):
         self.addStringParameter("Query", help="Cypher Query to obtain sub-graph",
                                 defaultValue="MATCH (a:GOI)-[b]-(c:Gene) return a,b,c",
                                 isMandatory=True)
-        self.addDirectoryParameter("Directory path", isMandatory=True, help="The path to the file")
+        self.addDirectoryParameter("Directory path", isMandatory=True, help="The path to the file", defaultValue='/home/eliot/Documents/Travail/M1/Projets/FormulaireNeOmics/Ressources')
         self.addStringParameter("File name", help="intermediate name of graphml", defaultValue="graph",
                                 isMandatory=True)
         self.addStringParameter("URI", help="URI", defaultValue="bolt://localhost:7687", isMandatory=True)
@@ -254,6 +255,16 @@ class Import_graph(tlp.ImportModule):
         self.graph.applyAlgorithm("Edge bundling")
         viewShape = self.graph.getIntegerProperty("viewShape") 
         viewShape.setAllEdgeValue(tlp.EdgeShape.BezierCurve)
+        viewColor = self.graph.getColorProperty('viewColor')
+        viewColor.setAllEdgeValue(tlp.Color(163, 163, 163, 70))
+        
+        viewLabel = self.graph.getStringProperty('viewLabel')
+        viewLabel.setAllNodeStringValue("")
+#        nodeLinkView = tlpgui.createNodeLinkDiagramView(self.graph)
+#        renderingParameters = nodeLinkView.getRenderingParameters()
+#        renderingParameters.setLabelsDensity(-100)
+#        nodeLinkView.setRenderingParameters(renderingParameters)
+        self.graph.setName(self.dataSet['Query'])
         return True
 
 
