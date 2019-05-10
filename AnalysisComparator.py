@@ -1,9 +1,37 @@
-import tkinter as tk
-from tulip import tlp
 import tulipplugins
-import py2neo as neo
-from tkinter.font import Font
-from PIL import Image, ImageTk
+from tulip import tlp
+
+
+def subgraphGrid(multiple_graph, nbcolumn):
+    """
+    Align all the subgraph of a graph, in a grid.
+
+    Args:
+        multiple_graph (tlp.Graph): A parent graph
+        nbcolumn (int): number of column in the grid
+    """
+    # get one subgraph's bounding box
+    boundingBox = tlp.computeBoundingBox(multiple_graph.getNthSubGraph(1))
+    number_of_visited_subgraph = 0
+    size_X = 2.5 * abs(boundingBox[1][0] - boundingBox[0][0])
+    # we multiply by 2.5 (2*radius + 0.5 to have a small padding)
+    size_Y = 2.5 * abs(boundingBox[1][1] - boundingBox[0][1])
+    # we multiply by 2.5 (2*radius + 0.5 to have a small padding)
+    offset_X = number_of_visited_subgraph * size_X
+    offset_Y = number_of_visited_subgraph * size_Y
+    layout = multiple_graph.getLayoutProperty("viewLayout")
+    for multiple_graph in multiple_graph.getSubGraphs():
+        number_of_visited_subgraph += 1
+        for node in multiple_graph.getNodes():
+            layout[node] += layout[node] + tlp.Vec3f(offset_X, -offset_Y, 0)
+        for edge in multiple_graph.getEdges():
+            control_points = layout[edge]
+            new_control_points = []
+            for vector in control_points:
+                new_control_points.append(tuple(map(sum, zip(vector, (offset_X, -offset_Y, 0)))))
+            layout[edge] = new_control_points
+        offset_X = number_of_visited_subgraph % nbcolumn * size_X
+        offset_Y = (number_of_visited_subgraph // nbcolumn) * size_Y
 
 
 class AnalysisComparator(tlp.Algorithm):
@@ -12,6 +40,9 @@ class AnalysisComparator(tlp.Algorithm):
         # you can add parameters to the plugin here through the following syntax
         # self.add<Type>Parameter("<paramName>", "<paramDoc>", "<paramDefaultValue>")
         # (see documentation of class tlp.WithParameter to see what types of parameters are supported)
+        self.addDirectoryParameter("Directory path",
+                                   defaultValue="/home/eliot/Documents/Travail/M1/Projets/FormulaireNeOmics/Ressources",
+                                   isMandatory=True, help="The path to the file")
 
     def check(self):
         # This method is called before applying the algorithm on the input graph.
@@ -34,16 +65,20 @@ class AnalysisComparator(tlp.Algorithm):
 
         # The method must return a boolean indicating if the algorithm
         # has been successfully applied on the input graph.
-        neo_graph = neo.Graph("bolt://localhost:11016", auth=("eliot", "1234"))
+        import tkinter as tk
+        from tkinter.font import Font
+        import py2neo as neo
+        neo_graph = neo.Graph("bolt://localhost:7687", auth=("eliot", "1234"))
         root = tk.Tk()
         from ScrollingFrame import ScrollingFrame
         from tkentrycomplete import AutocompleteCombobox
-        resources = "C:/Users/Eliot/PycharmProjects/FormulaireNeOmics/Ressources"
+        resources = self.dataSet["Directory path"]
         BG_COLOR = "#FFFFFF"
         ADD_ICON = tk.PhotoImage(file=resources + "/Add_button.png")
         REMOVE_ICON = tk.PhotoImage(file=resources + "/Remove_line.png")
         FONT = Font(family="Arial", size=10)
-
+        root.title("Cypher Query Creator")
+        root.configure(bg=BG_COLOR)
         test = tk.Frame(root)
         test.pack()
         work_frame = ScrollingFrame(test, root, height=400)
@@ -102,7 +137,7 @@ class AnalysisComparator(tlp.Algorithm):
             def update_analysis_options(self, *args):
                 self.analysis_box.set_completion_list([result["analysis"] for result in neo_graph.run(
                     "MATCH (:Experience{{name:'{}'}})--(:Tissue {{name:'{}'}})--(a:Analysis) RETURN a.name AS analysis".format(
-                        self.exp.get(),self.tissue.get()))])
+                        self.exp.get(), self.tissue.get()))])
                 self.analysis.set("")
 
             @staticmethod
@@ -116,13 +151,14 @@ class AnalysisComparator(tlp.Algorithm):
                 self.frame.destroy()
                 Line.analysisLines.remove(self)
                 Line.update_line_numbers()
-            
+
             def __str__(self):
                 return "{} on {} on {}".format(self.analysis.get(), self.exp.get(), self.tissue.get())
-            
+
             @property
             def cypher(self):
-                return "(:Experience{{name:'{}'}})--(:Tissue {{name:'{}'}})--(:Analysis {{name:'{}'}})".format( self.exp.get(), self.tissue.get(),self.analysis.get())
+                return "(:Experience{{name:'{}'}})--(:Tissue {{name:'{}'}})--(:Analysis {{name:'{}'}})".format(
+                    self.exp.get(), self.tissue.get(), self.analysis.get())
 
             @staticmethod
             def new_line():
@@ -132,14 +168,31 @@ class AnalysisComparator(tlp.Algorithm):
 
             @staticmethod
             def draw():
-                graph = AnalysisComparator.graph
-                small_multiple = graph.addSubGraph(selection=None, name="Small Multiples")
+
+                small_multiple = self.graph.getSuperGraph().addSubGraph(name="Small Multiples")
                 for analysis in Line.analysisLines:
                     subgraph = small_multiple.addSubGraph(name=str(analysis))
-                    tlp.copyToGraph(subgraph, graph)
+                    tlp.copyToGraph(subgraph, self.graph)
+                    viewColor = subgraph.getLocalColorProperty('viewColor')
+                    viewSize = subgraph.getSizeProperty("viewSize")
+                    viewColor.setAllNodeValue(tlp.Color(163, 163, 163, 100))
+                    viewColor.setAllEdgeValue(tlp.Color(163, 163, 163, 10))
+                    name_to_node = {}
+                    for node in subgraph.getNodes():
+                        name_to_node[subgraph.getNodePropertiesValues(node)["name"]] = node
                     up_regulated = [result["name"] for result in neo_graph.run("MATCH " + analysis.cypher +
                                                                                "--(:Group {name:'up'})--(a) RETURN a.name as name")]
-                    raise Exception("MATCH " + analysis.cypher + "--(:Group {name:'up'})--(a) RETURN a.name as name")
+                    for name in up_regulated:
+                        if name in name_to_node:
+                            viewColor[name_to_node[name]] = tlp.Color(0, 255, 10, 255)
+                            viewSize.setNodeValue(name_to_node[name], tlp.Size(20, 20, 20))
+                    down_regulated = [result["name"] for result in neo_graph.run("MATCH " + analysis.cypher +
+                                                                                 "--(:Group {name:'down'})--(a) RETURN a.name as name")]
+                    for name in down_regulated:
+                        if name in name_to_node:
+                            viewColor[name_to_node[name]] = tlp.Color(255, 2, 2, 255)
+                            viewSize.setNodeValue(name_to_node[name], tlp.Size(20, 20, 20))
+                subgraphGrid(small_multiple, 2)
                 root.destroy()
 
         add_button = tk.Button(work_frame.frame, image=ADD_ICON, relief='flat', command=Line.new_line, bg=BG_COLOR,
