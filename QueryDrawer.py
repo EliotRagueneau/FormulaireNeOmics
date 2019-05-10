@@ -244,7 +244,16 @@ class Import_graph(tlp.ImportModule):
                                 self.dataSet["Password"]))
         # parse the GraphML file
         parser.parse(open(file_path, "rb"))
-
+        
+        params = tlp.getDefaultPluginParameters("FM^3 (OGDF)", self.graph)
+        # get a reference to the default layout property
+        viewLayout = self.graph.getLayoutProperty("viewLayout")
+        
+        # call the layout algorithm and store the result in viewLayout
+        self.graph.applyLayoutAlgorithm("FM^3 (OGDF)", viewLayout, params)
+        self.graph.applyAlgorithm("Edge bundling")
+        viewShape = self.graph.getIntegerProperty("viewShape") 
+        viewShape.setAllEdgeValue(tlp.EdgeShape.BezierCurve)
         return True
 
 
