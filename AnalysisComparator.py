@@ -186,32 +186,32 @@ class AnalysisComparator(tlp.Algorithm):
                 for analysis in Line.analysisLines:
                     subgraph = small_multiple.addSubGraph(name=str(analysis))
                     tlp.copyToGraph(subgraph, source)
-#                    viewColor = subgraph.getColorProperty('viewColor')
+                    viewColor = subgraph.getColorProperty('viewColor')
 #                    viewSize = subgraph.getSizeProperty("viewSize")
-#                    viewColor.setAllNodeValue(tlp.Color(163, 163, 163, 10))
-#                    viewColor.setAllEdgeValue(tlp.Color(163, 163, 163, 10))
-#                    name_to_node = {}
-#                    for node in subgraph.getNodes():
-#                        name_to_node[subgraph.getNodePropertiesValues(node)["name"]] = node
-#                    up_regulated = [result["name"] for result in neo_graph.run("MATCH " + analysis.cypher +
-#                                                                               "--(:Group {name:'up'})--(a) RETURN a.name as name")]
-#                    for name in up_regulated:
-#                        if name in name_to_node:
-#                            viewColor[name_to_node[name]] = tlp.Color(0, 255, 10, 255)
+                    viewColor.setAllNodeValue(tlp.Color(163, 163, 163, 10))
+                    viewColor.setAllEdgeValue(tlp.Color(163, 163, 163, 10))
+                    name_to_node = {}
+                    for node in subgraph.getNodes():
+                        name_to_node[subgraph.getNodePropertiesValues(node)["name"]] = node
+                    up_regulated = [result["name"] for result in neo_graph.run("MATCH " + analysis.cypher +
+                                                                               "--(:Group {name:'up'})--(a) RETURN a.name as name")]
+                    for name in up_regulated:
+                        if name in name_to_node:
+                            viewColor[name_to_node[name]] = tlp.Color(0, 255, 10, 255)
 #                            viewSize.setNodeValue(name_to_node[name], tlp.Size(10, 10, 10))
-#                    down_regulated = [result["name"] for result in neo_graph.run("MATCH " + analysis.cypher +
-#                                                                                 "--(:Group {name:'down'})--(a) RETURN a.name as name")]
-#                    for name in down_regulated:
-#                        if name in name_to_node:
-#                            viewColor[name_to_node[name]] = tlp.Color(255, 2, 2, 255)
+                    down_regulated = [result["name"] for result in neo_graph.run("MATCH " + analysis.cypher +
+                                                                                 "--(:Group {name:'down'})--(a) RETURN a.name as name")]
+                    for name in down_regulated:
+                        if name in name_to_node:
+                            viewColor[name_to_node[name]] = tlp.Color(255, 2, 2, 255)
 #                            viewSize.setNodeValue(name_to_node[name], tlp.Size(10, 10, 10))
-#                subgraphGrid(small_multiple, 2)
-#                
-#                nodeLinkView = tlpgui.createNodeLinkDiagramView(small_multiple)
-#                renderingParameters = nodeLinkView.getRenderingParameters()
-#                renderingParameters.setEdgeColorInterpolate(True)
-#                renderingParameters.setLabelsDensity(-100)
-#                nodeLinkView.setRenderingParameters(renderingParameters)
+                subgraphGrid(small_multiple, 2)
+                
+                nodeLinkView = tlpgui.createNodeLinkDiagramView(small_multiple)
+                renderingParameters = nodeLinkView.getRenderingParameters()
+                renderingParameters.setEdgeColorInterpolate(True)
+                renderingParameters.setLabelsDensity(-100)
+                nodeLinkView.setRenderingParameters(renderingParameters)
                 root.destroy()
 
         add_button = tk.Button(work_frame.frame, image=ADD_ICON, relief='flat', command=Line.new_line, bg=BG_COLOR,
