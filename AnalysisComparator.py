@@ -53,6 +53,7 @@ class AnalysisComparator(tlp.Algorithm):
         self.addDirectoryParameter("Directory path",
                                    defaultValue="/net/stockage/PdP_BioInfo_2019/Gallardo_Ragueneau_Lambard/Ressources",
                                    isMandatory=True, help="The path to the file")
+        self.addUnsignedIntegerParameter("# Columns", help="Number of columns to display", defaultValue="2", isMandatory=True)
         self.addStringParameter("URI", help="URI", defaultValue="bolt://infini2:7687", isMandatory=True)
         self.addStringParameter("User name", help="Neo4j DB user name", defaultValue="neo4j", isMandatory=True)
         self.addStringParameter("Password", help="DB password", defaultValue="cremi", isMandatory=True)
@@ -190,7 +191,7 @@ class AnalysisComparator(tlp.Algorithm):
                         if name in name_to_node:
                             viewColor[name_to_node[name]] = tlp.Color(204, 0, 0, 255)
                             viewSize.setNodeValue(name_to_node[name], tlp.Size(10, 10, 10))
-                subgraphGrid(small_multiple, 2)                
+                subgraphGrid(small_multiple, self.dataSet["# Columns"])                
                 nodeLinkView = tlpgui.createNodeLinkDiagramView(small_multiple)
                 renderingParameters = nodeLinkView.getRenderingParameters()
                 renderingParameters.setEdgeColorInterpolate(True)

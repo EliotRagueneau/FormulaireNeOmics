@@ -1,9 +1,9 @@
 __author__ = "Bryan Oakley"
 import tkinter as tk
-from Colors import *
 
 class ScrollingFrame(tk.Frame):
     def __init__(self, parent, root, height=540):
+        BG_COLOR = "#FFFFFF"
         tk.Frame.__init__(self, parent)
         self.canvas = tk.Canvas(parent, borderwidth=0, background=BG_COLOR, highlightthickness=0, height=height)
         self.frame = tk.Frame(self.canvas, background=BG_COLOR)
