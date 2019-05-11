@@ -26,13 +26,6 @@ from tulipgui import tlpgui
 # map GraphML node id to Tulip node
 idToNode = {}
 
-
-# Connexion à la base de donnée neo4j
-# load = Graph("bolt://localhost:7687",auth=("neo4j","aaa"))
-
-# Création du fichier graphml
-# load.run("CALL apoc.export.graphml.query('MATCH p=()-[r:ACTED_IN]->() RETURN p LIMIT 50','C:/Users/jeanc/Desktop/Projet_Neomics/graph1.graphml',{useTypes:true, storeNodeIds:true})")
-
 # XML Sax Content Handler for parsing GraphML files
 class TulipGraphMLHandler(xml.sax.ContentHandler):
 
@@ -126,13 +119,13 @@ class TulipGraphMLHandler(xml.sax.ContentHandler):
     # reset current element parsed
     def endElement(self, name):
         if name == 'node':
-#            properties = self.graph.getNodePropertiesValues(self.currentNode)
-#            if properties.exist("name"):
-#                self.viewLabel[self.currentNode] = properties["name"]
-#            if properties.exist("id"):
-#                self.viewLabel[self.currentNode] = properties["id"]
-#            if properties.exist("family"):
-#                self.viewLabel[self.currentNode] = properties["family"]
+            properties = self.graph.getNodePropertiesValues(self.currentNode)
+            if properties.exist("name"):
+                self.viewLabel[self.currentNode] = properties["name"]
+            if properties.exist("id"):
+                self.viewLabel[self.currentNode] = properties["id"]
+            if properties.exist("family"):
+                self.viewLabel[self.currentNode] = properties["family"]
             self.currentNode = None
         elif name == 'edge':
             self.currentEdge = None
@@ -218,12 +211,12 @@ class Import_graph(tlp.ImportModule):
         self.addStringParameter("Query", help="Cypher Query to obtain sub-graph",
                                 defaultValue="MATCH (a:GOI)-[b]-(c:Gene) return a,b,c",
                                 isMandatory=True)
-        self.addDirectoryParameter("Directory path", isMandatory=True, help="The path to the file", defaultValue='/home/eliot/Documents/Travail/M1/Projets/FormulaireNeOmics/Ressources')
+        self.addDirectoryParameter("Directory path", isMandatory=True, help="The path to the file", defaultValue='/net/stockage/PdP_BioInfo_2019/Gallardo_Ragueneau_Lambard/Ressources')
         self.addStringParameter("File name", help="intermediate name of graphml", defaultValue="graph",
                                 isMandatory=True)
-        self.addStringParameter("URI", help="URI", defaultValue="bolt://localhost:7687", isMandatory=True)
-        self.addStringParameter("User name", help="Neo4j DB user name", defaultValue="eliot", isMandatory=True)
-        self.addStringParameter("Password", help="DB password", defaultValue="1234", isMandatory=True)
+        self.addStringParameter("URI", help="URI", defaultValue="bolt://infini2:7687", isMandatory=True)
+        self.addStringParameter("User name", help="Neo4j DB user name", defaultValue="neo4j", isMandatory=True)
+        self.addStringParameter("Password", help="DB password", defaultValue="cremi", isMandatory=True)
 
     def fileExtensions(self):
         return ["graphml"]
@@ -257,13 +250,6 @@ class Import_graph(tlp.ImportModule):
         viewShape.setAllEdgeValue(tlp.EdgeShape.BezierCurve)
         viewColor = self.graph.getColorProperty('viewColor')
         viewColor.setAllEdgeValue(tlp.Color(163, 163, 163, 70))
-        
-        viewLabel = self.graph.getStringProperty('viewLabel')
-        viewLabel.setAllNodeStringValue("")
-#        nodeLinkView = tlpgui.createNodeLinkDiagramView(self.graph)
-#        renderingParameters = nodeLinkView.getRenderingParameters()
-#        renderingParameters.setLabelsDensity(-100)
-#        nodeLinkView.setRenderingParameters(renderingParameters)
         self.graph.setName(self.dataSet['Query'])
         return True
 

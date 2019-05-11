@@ -2,7 +2,6 @@ import tulipplugins
 from tulip import tlp
 from tulipgui import tlpgui
 
-
 def copyGraph(dest_graph: tlp.Graph, src_graph: tlp.Graph):
     dest_graph.delEdges(dest_graph.getEdges())
     dest_graph.delNodes(dest_graph.getNodes())
@@ -12,11 +11,15 @@ def copyGraph(dest_graph: tlp.Graph, src_graph: tlp.Graph):
     for edge in src_graph.getEdges():
         nodes = src_graph.ends(edge)
         dest_graph.addEdge(old_to_new[nodes[0]], old_to_new[nodes[1]], src_graph.getEdgePropertiesValues(edge))
-
+        
 
 def subgraphGrid(multiple_graph, nbcolumn):
     """
     Align all the subgraph of a graph, in a grid.
+    
+    Author:
+        Pierre Jacquet
+        Modfied by Eliot Ragueneau
 
     Args:
         multiple_graph (tlp.Graph): A parent graph
@@ -25,18 +28,16 @@ def subgraphGrid(multiple_graph, nbcolumn):
     # get one subgraph's bounding box
     boundingBox = tlp.computeBoundingBox(multiple_graph.getNthSubGraph(1))
     number_of_visited_subgraph = 0
-    size_X = 2.5 * abs(boundingBox[1][0] - boundingBox[0][0])
-    # we multiply by 2.5 (2*radius + 0.5 to have a small padding)
-    size_Y = 2.5 * abs(boundingBox[1][1] - boundingBox[0][1])
-    # we multiply by 2.5 (2*radius + 0.5 to have a small padding)
-    offset_X = number_of_visited_subgraph * size_X
-    offset_Y = number_of_visited_subgraph * size_Y
+    size_X = 1.5 *abs(boundingBox[1][0] - boundingBox[0][0])
+    size_Y = 1.5 * abs(boundingBox[1][1] - boundingBox[0][1])
+    offset_X = 0
+    offset_Y = 0
     layout = multiple_graph.getLayoutProperty("viewLayout")
-    for multiple_graph in multiple_graph.getSubGraphs():
+    for sub_graph in multiple_graph.getSubGraphs():
         number_of_visited_subgraph += 1
-        for node in multiple_graph.getNodes():
-            layout[node] += layout[node] + tlp.Vec3f(offset_X, -offset_Y, 0)
-        for edge in multiple_graph.getEdges():
+        for node in sub_graph.getNodes():
+            layout[node] += tlp.Vec3f(offset_X, -offset_Y, 0)
+        for edge in sub_graph.getEdges():
             control_points = layout[edge]
             new_control_points = []
             for vector in control_points:
@@ -49,38 +50,21 @@ def subgraphGrid(multiple_graph, nbcolumn):
 class AnalysisComparator(tlp.Algorithm):
     def __init__(self, context):
         tlp.Algorithm.__init__(self, context)
-        # you can add parameters to the plugin here through the following syntax
-        # self.add<Type>Parameter("<paramName>", "<paramDoc>", "<paramDefaultValue>")
-        # (see documentation of class tlp.WithParameter to see what types of parameters are supported)
         self.addDirectoryParameter("Directory path",
-                                   defaultValue="/home/eliot/Documents/Travail/M1/Projets/FormulaireNeOmics/Ressources",
+                                   defaultValue="/net/stockage/PdP_BioInfo_2019/Gallardo_Ragueneau_Lambard/Ressources",
                                    isMandatory=True, help="The path to the file")
+        self.addStringParameter("URI", help="URI", defaultValue="bolt://infini2:7687", isMandatory=True)
+        self.addStringParameter("User name", help="Neo4j DB user name", defaultValue="neo4j", isMandatory=True)
+        self.addStringParameter("Password", help="DB password", defaultValue="cremi", isMandatory=True)
 
     def check(self):
-        # This method is called before applying the algorithm on the input graph.
-        # You can perform some precondition checks here.
-        # See comments in the run method to know how to access to the input graph.
-
-        # Must return a tuple (boolean, string). First member indicates if the algorithm can be applied
-        # and the second one can be used to provide an error message
         return (True, "Ok")
 
     def run(self):
-        # This method is the entry point of the algorithm when it is called
-        # and must contain its implementation.
-
-        # The graph on which the algorithm is applied can be accessed through
-        # the "graph" class attribute (see documentation of class tlp.Graph).
-
-        # The parameters provided by the user are stored in a dictionnary
-        # that can be accessed through the "dataSet" class attribute.
-
-        # The method must return a boolean indicating if the algorithm
-        # has been successfully applied on the input graph.
         import tkinter as tk
         from tkinter.font import Font
         import py2neo as neo
-        neo_graph = neo.Graph("bolt://localhost:7687", auth=("eliot", "1234"))
+        neo_graph = neo.Graph(self.dataSet["URI"], auth=(self.dataSet["User name"], self.dataSet["Password"]))
         root = tk.Tk()
         from ScrollingFrame import ScrollingFrame
         from tkentrycomplete import AutocompleteCombobox
@@ -89,7 +73,7 @@ class AnalysisComparator(tlp.Algorithm):
         ADD_ICON = tk.PhotoImage(file=resources + "/Add_button.png")
         REMOVE_ICON = tk.PhotoImage(file=resources + "/Remove_line.png")
         FONT = Font(family="Arial", size=10)
-        root.title("Cypher Query Creator")
+        root.title("Analysis Comparator")
         root.configure(bg=BG_COLOR)
         test = tk.Frame(root)
         test.pack()
@@ -180,38 +164,44 @@ class AnalysisComparator(tlp.Algorithm):
 
             @staticmethod
             def draw():
-                source = self.graph.addCloneSubGraph("Source")
+                source = self.graph.addSubGraph("Source")
+                copyGraph(source, self.graph)
                 small_multiple = self.graph.addSubGraph("Small")
                 #                small_multiple.setAttribute("name", )
                 for analysis in Line.analysisLines:
                     subgraph = small_multiple.addSubGraph(name=str(analysis))
-                    tlp.copyToGraph(subgraph, source)
+                    copyGraph(subgraph, source)
                     viewColor = subgraph.getColorProperty('viewColor')
-#                    viewSize = subgraph.getSizeProperty("viewSize")
-                    viewColor.setAllNodeValue(tlp.Color(163, 163, 163, 10))
-                    viewColor.setAllEdgeValue(tlp.Color(163, 163, 163, 10))
+                    viewSize = subgraph.getSizeProperty("viewSize")
+                    viewColor.setAllEdgeValue(tlp.Color(128, 128, 128, 50))
                     name_to_node = {}
                     for node in subgraph.getNodes():
+                        viewColor[node] = tlp.Color(128, 128, 128, 50)
                         name_to_node[subgraph.getNodePropertiesValues(node)["name"]] = node
                     up_regulated = [result["name"] for result in neo_graph.run("MATCH " + analysis.cypher +
                                                                                "--(:Group {name:'up'})--(a) RETURN a.name as name")]
                     for name in up_regulated:
                         if name in name_to_node:
-                            viewColor[name_to_node[name]] = tlp.Color(0, 255, 10, 255)
-#                            viewSize.setNodeValue(name_to_node[name], tlp.Size(10, 10, 10))
+                            viewColor[name_to_node[name]] = tlp.Color(0, 204, 0, 255)
+                            viewSize.setNodeValue(name_to_node[name], tlp.Size(10, 10, 10))
                     down_regulated = [result["name"] for result in neo_graph.run("MATCH " + analysis.cypher +
                                                                                  "--(:Group {name:'down'})--(a) RETURN a.name as name")]
                     for name in down_regulated:
                         if name in name_to_node:
-                            viewColor[name_to_node[name]] = tlp.Color(255, 2, 2, 255)
-#                            viewSize.setNodeValue(name_to_node[name], tlp.Size(10, 10, 10))
-                subgraphGrid(small_multiple, 2)
-                
+                            viewColor[name_to_node[name]] = tlp.Color(204, 0, 0, 255)
+                            viewSize.setNodeValue(name_to_node[name], tlp.Size(10, 10, 10))
+                subgraphGrid(small_multiple, 2)                
                 nodeLinkView = tlpgui.createNodeLinkDiagramView(small_multiple)
                 renderingParameters = nodeLinkView.getRenderingParameters()
                 renderingParameters.setEdgeColorInterpolate(True)
                 renderingParameters.setLabelsDensity(-100)
                 nodeLinkView.setRenderingParameters(renderingParameters)
+                
+                background = nodeLinkView.state()
+                scene = background['scene']
+                scene = scene.replace("<background>(255,255,255,255)</background>","<background>(0,0,0,255)</background>")
+                background['scene'] = scene
+                nodeLinkView.setState(background)
                 root.destroy()
 
         add_button = tk.Button(work_frame.frame, image=ADD_ICON, relief='flat', command=Line.new_line, bg=BG_COLOR,
