@@ -6,11 +6,11 @@ class NeOmics(tlp.ImportModule):
     def __init__(self, context):
         tlp.ImportModule.__init__(self, context)
         self.addDirectoryParameter("Directory path",
-                                   defaultValue="/net/stockage/PdP_BioInfo_2019/Gallardo_Ragueneau_Lambard/Ressources",
+                                   defaultValue="/home/eliot/Documents/Travail/M1/Projets/FormulaireNeOmics/Ressources",
                                    isMandatory=True, help="The path to the file")
-        self.addStringParameter("URI", help="URI", defaultValue="bolt://infini2:7687", isMandatory=True)
-        self.addStringParameter("User name", help="Neo4j DB user name", defaultValue="neo4j", isMandatory=True)
-        self.addStringParameter("Password", help="DB password", defaultValue="cremi", isMandatory=True)
+        self.addStringParameter("URI", help="URI", defaultValue="bolt://localhost:7687", isMandatory=True)
+        self.addStringParameter("User name", help="Neo4j DB user name", defaultValue="eliot", isMandatory=True)
+        self.addStringParameter("Password", help="DB password", defaultValue="1234", isMandatory=True)
 
     def importGraph(self):
         import tkinter as tk
@@ -43,6 +43,7 @@ class NeOmics(tlp.ImportModule):
                      "Protein"   : tk.PhotoImage(file=ressources + "/Protein.png"),
                      "Annotation": tk.PhotoImage(file=ressources + "/Annot.png"),
                      "Group"     : tk.PhotoImage(file=ressources + "/Group.png"),
+                     "Cluster"   : tk.PhotoImage(file=ressources + "/Cluster.png"),
                      "Unknown"   : tk.PhotoImage(file=ressources + "/Unknown_node.png")
 
                      }
@@ -83,6 +84,7 @@ class NeOmics(tlp.ImportModule):
 
                 link = node.link
                 if link:
+                    link.update_type_list()
                     matches += "-["
                     if link.simple:
                         link_type = link.type.get()
@@ -349,7 +351,10 @@ class NeOmics(tlp.ImportModule):
                 """Updates type autocompletion list """
                 type_query = self.previous.query + self.previous.descriptor + '-[r]-{} RETURN DISTINCT type(r) as types'.format(
                     self.next.descriptor)
-                completion_list = {result['types'] for result in neo_graph.run(type_query) if 'types' in result}
+                completion_list = {result['types'] for result in neo_graph.run(type_query) if
+                                   result['types'] is not None}
+                print(type_query)
+                print(completion_list)
                 self.type_box.set_completion_list(completion_list)
 
             def switch(self):

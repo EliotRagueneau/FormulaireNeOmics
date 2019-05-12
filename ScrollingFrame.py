@@ -1,6 +1,7 @@
 __author__ = "Bryan Oakley"
 import tkinter as tk
 
+
 class ScrollingFrame(tk.Frame):
     def __init__(self, parent, root, height=540):
         BG_COLOR = "#FFFFFF"
@@ -34,5 +35,3 @@ class ScrollingFrame(tk.Frame):
     def on_frame_configure(self, *args):
         """Reset the scroll region to encompass the inner frame"""
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-
-
