@@ -6,11 +6,11 @@ class NeOmics(tlp.ImportModule):
     def __init__(self, context):
         tlp.ImportModule.__init__(self, context)
         self.addDirectoryParameter("Directory path",
-                                   defaultValue="/home/eliot/Documents/Travail/M1/Projets/FormulaireNeOmics/Ressources",
+                                   defaultValue="/net/stockage/PdP_BioInfo_2019/Gallardo_Ragueneau_Lambard/Ressources",
                                    isMandatory=True, help="The path to the file")
-        self.addStringParameter("URI", help="URI", defaultValue="bolt://localhost:7687", isMandatory=True)
-        self.addStringParameter("User name", help="Neo4j DB user name", defaultValue="eliot", isMandatory=True)
-        self.addStringParameter("Password", help="DB password", defaultValue="1234", isMandatory=True)
+        self.addStringParameter("URI", help="URI", defaultValue="bolt://infini2:7687", isMandatory=True)
+        self.addStringParameter("User name", help="Neo4j DB user name", defaultValue="neo4j", isMandatory=True)
+        self.addStringParameter("Password", help="DB password", defaultValue="cremi", isMandatory=True)
 
     def importGraph(self):
         import tkinter as tk
