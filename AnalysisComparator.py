@@ -89,7 +89,7 @@ class AnalysisComparator(tlp.Algorithm):
         # ---- GUI configuration ----
         root.title("Analysis Comparator")
         root.configure(bg=bg_color)
-        surrounding_frame = tk.Frame(root,  relief='flat', bg=bg_color)
+        surrounding_frame = tk.Frame(root, relief='flat', bg=bg_color)
         surrounding_frame.pack()
         work_frame = ScrollingFrame(surrounding_frame, root, height=400)
         work_frame.pack()
@@ -291,5 +291,7 @@ class AnalysisComparator(tlp.Algorithm):
 
 # The line below does the magic to register the plugin to the plugin database
 # and updates the GUI to make it accessible through the menus.
-tulipplugins.registerPluginOfGroup("AnalysisComparator", "Analysis comparator", "author", "26/07/2011", "info",
+tulipplugins.registerPluginOfGroup("AnalysisComparator", "Analysis comparator",
+                                   "Eliot Ragueneau et Jean Clément Gallardo", "11/05/2019",
+                                   "Compare analysis methods of transcriptomics by drawing parallels regulation graphs",
                                    "1.0", "Algorithm")
