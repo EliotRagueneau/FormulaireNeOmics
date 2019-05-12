@@ -13,18 +13,16 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU General Public License for more details.
 
-# That plugin imports a graph from a file in the GraphML format
-# (see http://graphml.graphdrawing.org/)
-
+# Library import
 import xml.sax
 
 import tulipplugins
 from py2neo import *
 from tulip import *
-from tulipgui import tlpgui
 
 # map GraphML node id to Tulip node
 idToNode = {}
+
 
 # XML Sax Content Handler for parsing GraphML files
 class TulipGraphMLHandler(xml.sax.ContentHandler):
@@ -82,6 +80,7 @@ class TulipGraphMLHandler(xml.sax.ContentHandler):
             self.graph['viewLabel'][n] = nodeId
             # mark current node
             self.currentNode = n
+            # color nodes by labels
             self.viewColor[n] = tlp.Color(162, 162, 162)
             if "Gene" in attrs['labels']:
                 self.viewColor[n] = tlp.Color(212, 23, 23)
@@ -207,56 +206,71 @@ class TulipGraphMLHandler(xml.sax.ContentHandler):
 
 class Import_graph(tlp.ImportModule):
     def __init__(self, context):
+        # add parameters and default value for the plugins
         tlp.ImportModule.__init__(self, context)
-        self.addStringParameter("Query", help="Cypher Query to obtain sub-graph",
+        self.addStringParameter("Query", help="Cypher Query which is used to obtain sub-graph",
                                 defaultValue="MATCH (a:GOI)-[b]-(c:Gene) return a,b,c",
                                 isMandatory=True)
-        self.addDirectoryParameter("Directory path", isMandatory=True, help="The path to the file", defaultValue='/net/stockage/PdP_BioInfo_2019/Gallardo_Ragueneau_Lambard/Ressources')
-        self.addStringParameter("File name", help="intermediate name of graphml", defaultValue="graph",
+        self.addDirectoryParameter("Directory path", isMandatory=True,
+                                   help="The path to the file where the graph is exported",
+                                   defaultValue='/net/stockage/PdP_BioInfo_2019/Gallardo_Ragueneau_Lambard/Ressources')
+        self.addStringParameter("File name", help="name of the graphml file", defaultValue="graph",
                                 isMandatory=True)
-        self.addStringParameter("URI", help="URI", defaultValue="bolt://infini2:7687", isMandatory=True)
-        self.addStringParameter("User name", help="Neo4j DB user name", defaultValue="neo4j", isMandatory=True)
-        self.addStringParameter("Password", help="DB password", defaultValue="cremi", isMandatory=True)
+        self.addStringParameter("URI", help="enter the URL of your neo4j database", defaultValue="bolt://infini2:7687",
+                                isMandatory=True)
+        self.addStringParameter("User name", help="enter the neo4j database username", defaultValue="neo4j",
+                                isMandatory=True)
+        self.addStringParameter("Password", help="enter the neo4j database password", defaultValue="cremi",
+                                isMandatory=True)
 
     def fileExtensions(self):
         return ["graphml"]
 
     def importGraph(self):
+        # connexion to neo4j DB
         load = Graph(self.dataSet["URI"], auth=(self.dataSet["User name"], self.dataSet["Password"]))
 
         # create an XML Sax parser
         parser = xml.sax.make_parser()
-        # set our custom content handler
+        # create file path
         file_path = self.dataSet["Directory path"] + "/" + self.dataSet["File name"] + ".graphml"
+        # export graph from neo4j
         load.run(
             "CALL apoc.export.graphml.query('{}','{}',{{useTypes:true, storeNodeIds:true}})".format(
                 self.dataSet['Query'],
                 file_path))
 
+        # set our custom content handler
         parser.setContentHandler(
             TulipGraphMLHandler(self.graph, file_path, self.dataSet["URI"], self.dataSet["User name"],
                                 self.dataSet["Password"]))
+
         # parse the GraphML file
         parser.parse(open(file_path, "rb"))
-        
+
+        # get parameters from layout algorithm FM^3
         params = tlp.getDefaultPluginParameters("FM^3 (OGDF)", self.graph)
         # get a reference to the default layout property
         viewLayout = self.graph.getLayoutProperty("viewLayout")
-        
+
         # call the layout algorithm and store the result in viewLayout
         self.graph.applyLayoutAlgorithm("FM^3 (OGDF)", viewLayout, params)
         self.graph.applyAlgorithm("Edge bundling")
-        viewShape = self.graph.getIntegerProperty("viewShape") 
+        viewShape = self.graph.getIntegerProperty("viewShape")
         viewShape.setAllEdgeValue(tlp.EdgeShape.BezierCurve)
         viewColor = self.graph.getColorProperty('viewColor')
         viewColor.setAllEdgeValue(tlp.Color(163, 163, 163, 70))
+
+        # create the name of your graph in tulip
         self.graph.setName(self.dataSet['Query'])
         return True
 
 
 # The line below does the magic to register the plugin to the plugin database
 # and updates the GUI to make it accessible through the menus.
-tulipplugins.registerPluginOfGroup("Import_graph", "QueryDrawer", "Antoine Lambert, modifié par jc", "07/05/2019",
+tulipplugins.registerPluginOfGroup("Import_graph", "QueryDrawer",
+                                   "Antoine Lambert, modifié par Jean-Clément GALLARDO et Eliot RAGUENEAU",
+                                   "11/05/2019",
                                    """
                                    <p>Supported extension: graphml</p><p>Imports a graph from a file in the GraphML format (http://graphml.graphdrawing.org/).
                                    GraphML is a comprehensive and easy-to-use file format for graphs.
